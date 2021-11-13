@@ -1,8 +1,8 @@
 package com.thoughtworks.auctioncommissionservice.repository.entity;
 
-import com.thoughtworks.auctioncommissionservice.controller.dto.AuctionStatus;
-import com.thoughtworks.auctioncommissionservice.controller.dto.KeepingStatus;
-import com.thoughtworks.auctioncommissionservice.controller.dto.PaymentStatus;
+import com.thoughtworks.auctioncommissionservice.common.AuctionStatus;
+import com.thoughtworks.auctioncommissionservice.common.KeepingStatus;
+import com.thoughtworks.auctioncommissionservice.common.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

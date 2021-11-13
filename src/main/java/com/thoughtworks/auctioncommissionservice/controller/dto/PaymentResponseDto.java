@@ -1,5 +1,7 @@
 package com.thoughtworks.auctioncommissionservice.controller.dto;
 
+import com.thoughtworks.auctioncommissionservice.common.AccountType;
+import com.thoughtworks.auctioncommissionservice.common.PaymentStatus;
 import lombok.Builder;
 import lombok.Data;
 

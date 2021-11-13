@@ -2,8 +2,10 @@ package com.thoughtworks.auctioncommissionservice.client;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.http.Fault;
 import com.thoughtworks.auctioncommissionservice.controller.dto.PaymentDto;
-import com.thoughtworks.auctioncommissionservice.controller.dto.PaymentStatus;
+import com.thoughtworks.auctioncommissionservice.common.PaymentStatus;
+import feign.FeignException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.springframework.http.MediaType;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 public class PaymentClientTest {
@@ -34,7 +37,7 @@ public class PaymentClientTest {
     }
 
     @Test //工序三
-    void should_make() {
+    void should_return_success_when_mock_server_return_success() {
         WireMock.configureFor("localhost", 9000);
         stubFor(post(urlMatching("/payment"))
                 .willReturn(aResponse().withHeader("Content-Type", MediaType.TEXT_PLAIN_VALUE)
@@ -42,5 +45,15 @@ public class PaymentClientTest {
 
         String paymentStatus = paymentClient.makePayment(PaymentDto.builder().build());
         assertThat(paymentStatus).isEqualTo(PaymentStatus.SUCCESS.name());
+    }
+
+    @Test //工序三
+    void should_throw_exception_when_mock_server_throw_exception() {
+        WireMock.configureFor("localhost", 9000);
+        stubFor(post(urlMatching("/payment"))
+                .willReturn(aResponse().withFault(Fault.MALFORMED_RESPONSE_CHUNK)));
+
+        assertThrows(FeignException.class,
+                () -> paymentClient.makePayment(PaymentDto.builder().build()));
     }
 }

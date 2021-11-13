@@ -3,18 +3,15 @@ package com.thoughtworks.auctioncommissionservice.service;
 import com.thoughtworks.auctioncommissionservice.client.PaymentClient;
 import com.thoughtworks.auctioncommissionservice.controller.dto.PaymentDto;
 import com.thoughtworks.auctioncommissionservice.controller.dto.PaymentResponseDto;
-import com.thoughtworks.auctioncommissionservice.controller.dto.PaymentStatus;
-import com.thoughtworks.auctioncommissionservice.exception.LotNotFoundException;
-import com.thoughtworks.auctioncommissionservice.exception.PartitionException;
-import com.thoughtworks.auctioncommissionservice.exception.PaymentException;
+import com.thoughtworks.auctioncommissionservice.common.PaymentStatus;
+import com.thoughtworks.auctioncommissionservice.exception.*;
 import com.thoughtworks.auctioncommissionservice.message.JmsSender;
 import com.thoughtworks.auctioncommissionservice.repository.DelegationRepository;
 import com.thoughtworks.auctioncommissionservice.repository.entity.Delegation;
-import com.thoughtworks.auctioncommissionservice.controller.dto.KeepingStatus;
+import com.thoughtworks.auctioncommissionservice.common.KeepingStatus;
 import feign.FeignException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -28,8 +25,8 @@ public class DelegationService {
     private final JmsSender jmsSender;
 
     public PaymentResponseDto makePaymentForUnsoldLot(Long orderId, PaymentDto paymentInfo) {
-        Delegation delegation = delegationRepository.findByLotId(orderId);
         try {
+            Delegation delegation = delegationRepository.findByLotId(orderId);
             paymentClient.makePayment(paymentInfo);
             delegation.setPaymentStatus(PaymentStatus.SUCCESS);
             delegation.setPayTime(new Date().getTime());
@@ -40,25 +37,22 @@ public class DelegationService {
                     .accountName(paymentInfo.getAccountName())
                     .paymentStatus(delegation.getPaymentStatus()).build();
         } catch (FeignException e) {
-            if (e.status() == HttpStatus.SERVICE_UNAVAILABLE.value() || e.status() == HttpStatus.REQUEST_TIMEOUT.value()) {
-                log.info("partition error: {}", orderId);
-                throw new PartitionException();
+            if(e.getMessage().contains(ErrorCode.INSUFFICIENT_FEE.getValue())) {
+                throw new InsufficientFeePaymentException();
             }
-
-            if(e.getMessage().equals("INSUFFICIENT_FEE")) {
-                log.info("failed to make a payment for lot: {}", orderId);
-                throw new PaymentException("支付失败");
+            if (e.getMessage().contains(ErrorCode.INCORRECT_ACCOUNT_INFO.getValue())) {
+                throw new IncorrectInfoPaymentException();
             }
-            log.info("failed to make a payment for lot: {}", orderId);
-            throw new PaymentException("支付失败");
+            throw new PaymentException();
         }
     }
 
-    public void sendEvaluationRequest(Long orderId) {
+    public Boolean sendEvaluationRequest(Long orderId) {
         Delegation byLotId = delegationRepository.findByLotId(orderId);
         if(!byLotId.getKeepingStatus().equals(KeepingStatus.KEEPING)) {
-            throw new LotNotFoundException("拍品未上交，请先上交拍品");
+            throw new LotNotFoundException();
         }
         jmsSender.sendEvaluationRequest(orderId);
+        return true;
     }
 }
