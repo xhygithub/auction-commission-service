@@ -65,15 +65,15 @@ public class DelegationServiceTest {
     }
 
     @Test
-    void should_throw_payment_exception_when_failed_to_make_payment() {
-        String errorMessage = "system error";
+    void should_throw_payment_exception_when_make_payment_with_timeout_error() {
+        String errorMessage = "timeout error";
         String errorJson =
                 "{"
                         + "    \"com.thoughtworks.auctioncommissionservice.message\": \""
                         + errorMessage
                         + "\" ,"
                         + "    \"error_code\": \""
-                        + 400
+                        + 408
                         + "\""
                         + "  }";
         Request request = Request.create(
@@ -85,7 +85,7 @@ public class DelegationServiceTest {
         Response response =
                 Response.builder()
                         .request(request)
-                        .status(HttpStatus.BAD_REQUEST.value())
+                        .status(HttpStatus.REQUEST_TIMEOUT.value())
                         .headers(new HashMap<>())
                         .body(errorJson, Charset.defaultCharset())
                         .build();
@@ -132,7 +132,7 @@ public class DelegationServiceTest {
         Response response =
                 Response.builder()
                         .request(request)
-                        .status(HttpStatus.REQUEST_TIMEOUT.value())
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                         .headers(new HashMap<>())
                         .body(errorJson, Charset.defaultCharset())
                         .build();
@@ -179,7 +179,7 @@ public class DelegationServiceTest {
         Response response =
                 Response.builder()
                         .request(request)
-                        .status(HttpStatus.REQUEST_TIMEOUT.value())
+                        .status(HttpStatus.BAD_REQUEST.value())
                         .headers(new HashMap<>())
                         .body(errorJson, Charset.defaultCharset())
                         .build();
